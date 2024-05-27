@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mini Quiz</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f0f4f8;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            color: #4CAF50;
+            margin-bottom: 20px;
+        }
+
+        #quiz-container {
+            background-color: #fff;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            padding: 20px 40px;
+            border-radius: 10px;
+            text-align: center;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        #question-container {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            color: #555;
+        }
+
+        #answer-button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1em;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin-bottom: 20px;
+        }
+
+        #answer-button:hover {
+            background-color: #45a049;
+        }
+
+        .result, .error, .user-answer {
+            font-size: 1.5em;
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 5px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .result {
+            color: #4CAF50;
+            background-color: #e8f5e9;
+            border: 1px solid #4CAF50;
+        }
+
+        .error {
+            color: #f44336;
+            background-color: #ffebee;
+            border: 1px solid #f44336;
+        }
+
+        .user-answer {
+            color: #000;
+            background-color: #e0e0e0;
+            border: 1px solid #9e9e9e;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2em;
+            }
+
+            #quiz-container {
+                padding: 20px;
+            }
+
+            #question-container {
+                font-size: 1.2em;
+            }
+
+            #answer-button {
+                padding: 10px 20px;
+                font-size: 0.9em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Mini Quiz</h1>
+    <div id="quiz-container">
+        <div id="question-container" class="question"></div>
+        <button id="answer-button">Antwoord inspreken</button>
+        <div id="result-container"></div>
+        <div id="user-answer-container" class="user-answer"></div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,118 +1,103 @@
-let video;
-let poseNet;
-let handpose;
-let poses = [];
-let hands = [];
-let objects = [];
-let interactionRadius = 50;
+let videoStream;
+let handModel;
+let predictions = [];
+let rocket = null;
+let rocketImage;
+let score = 0;
+let lastRocketChangeTime = 0;
+const rocketVisibleTime = 5000;
+const rocketChangeInterval = 2000;
+let rocketDeflected = false;
+
+function preload() {
+  rocketImage = loadImage("raket.png");
+}
 
 function setup() {
-  createCanvas(640, 480).parent('canvasContainer');
-  
-  // Video capture
-  video = createCapture(VIDEO);
-  video.size(width, height);
-  video.hide();
-  
-  // Initialize PoseNet
-  poseNet = ml5.poseNet(video, modelReady('PoseNet'));
-  poseNet.on('pose', function(results) {
-    poses = results;
-  });
-  
-  // Initialize Handpose
-  handpose = ml5.handpose(video, modelReady('Handpose'));
-  handpose.on('predict', results => {
-    hands = results;
-  });
-  
-  // Create some objects to interact with
-  for (let i = 0; i < 5; i++) {
-    objects.push(new InteractiveObject(random(width), random(height)));
-  }
+  createCanvas(640, 480);
+  videoStream = createCapture(VIDEO);
+  videoStream.hide();
+  handModel = ml5.handpose(videoStream, modelLoaded);
+  handModel.on("predict", predictionsReceived);
 }
 
-function modelReady(modelName) {
-  return function() {
-    console.log(`${modelName} Model Loaded!`);
-  }
+function modelLoaded() {
+  console.log("Model Loaded!");
 }
 
-class InteractiveObject {
-  constructor(x, y) {
-    this.x = x;
-    this.y = y;
-    this.size = 50;
-    this.color = color(random(255), random(255), random(255));
-    this.isPicked = false;
-  }
-  
-  display() {
-    fill(this.color);
-    ellipse(this.x, this.y, this.size);
-  }
-  
-  checkInteraction(hands) {
-    for (let hand of hands) {
-      let handX = hand.landmarks[8][0];
-      let handY = hand.landmarks[8][1];
-      let d = dist(handX, handY, this.x, this.y);
-      
-      // Object prikken/slaan
-      if (d < interactionRadius) {
-        this.color = color(random(255), random(255), random(255));
-      } else {
-        // Reset de kleur als de hand niet in de buurt is
-        this.color = this.defaultColor;
-      }
-      
-      // Object oppakken
-      if (d < this.size / 2) {
-        this.isPicked = true;
-      } else {
-        // Als de hand niet in de buurt is, stop met oppakken
-        this.isPicked = false;
-      }
-    }
-  }
-  
-  
-  move() {
-    if (this.isPicked) {
-      if (hands.length > 0) {
-        this.x = hands[0].landmarks[8][0];
-        this.y = hands[0].landmarks[8][1];
-      } else {
-        this.isPicked = false;
-      }
-    }
-  }
+function predictionsReceived(results) {
+  predictions = results;
+}
+
+function newRocket() {
+  rocket = {
+    x: random(width),
+    y: random(height * 0.5, height * 0.8),
+    size: random(80, 100),
+    deflected: false,
+    spawnTime: millis(),
+  };
+  rocketDeflected = false;
 }
 
 function draw() {
-  background(220);
-  
-  // Draw video
-  image(video, 0, 0, width, height);
-  
-  // Update and display objects
-  for (let obj of objects) {
-    obj.move();
-    obj.checkInteraction(hands);
-    obj.display();
-  }
-  
-  // Draw detected hand landmarks
-  drawHands();
-}
+  image(videoStream, 0, 0, width, height);
 
-function drawHands() {
-  for (let hand of hands) {
-    for (let j = 0; j < hand.landmarks.length; j++) {
-      let [x, y, z] = hand.landmarks[j];
+  for (let i = 0; i < predictions.length; i++) {
+    let hand = predictions[i];
+    for (let j = 0; j < hand.annotations.indexFinger.length; j++) {
+      let fingertip = hand.annotations.indexFinger[j];
+      let x = fingertip[0];
+      let y = fingertip[1];
       fill(0, 255, 0);
-      noStroke();
-      ellipse(x, y, 10, 10);
+      ellipse(x, y, 20, 20);
     }
+    if (rocket && !rocketDeflected) {
+      for (let j = 0; j < hand.annotations.indexFinger.length; j++) {
+        let fingertip = hand.annotations.indexFinger[j];
+        let x = fingertip[0];
+        let y = fingertip[1];
+        let d = dist(x, y, rocket.x, rocket.y);
+        if (d < rocket.size / 2) {
+          rocketDeflected = true;
+          if (!rocket.deflected) {
+            rocket.deflected = true;
+            score++;
+          }
+        }
+      }
+    }
+  }
+
+  if (rocket) {
+    if (!rocket.deflected) {
+      let aspectRatio = rocketImage.width / rocketImage.height;
+      let rocketHeight = rocket.size;
+      let rocketWidth = rocketHeight * aspectRatio;
+      image(
+        rocketImage,
+        rocket.x - rocketWidth / 2,
+        rocket.y - rocketHeight / 2,
+        rocketWidth,
+        rocketHeight
+      );
+    }
+  }
+
+  if (rocket && millis() - rocket.spawnTime > rocketVisibleTime) {
+    rocket = null;
+    lastRocketChangeTime = millis();
+  }
+
+  textSize(24);
+  fill(0);
+  textAlign(LEFT, TOP);
+  text("Score: " + score, 10, 10);
+
+  if (
+    millis() - lastRocketChangeTime > rocketChangeInterval &&
+    !rocket
+  ) {
+    newRocket();
   }
 }

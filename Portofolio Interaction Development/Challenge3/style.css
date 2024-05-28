@@ -1,0 +1,44 @@
+body {
+    font-family: 'Roboto', sans-serif;
+    background-color: #e0f7fa;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+  }
+  
+  .container {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  
+  h1 {
+    color: #00796b;
+    font-size: 2.5em;
+  }
+  
+  p {
+    color: #004d40;
+    font-size: 1.2em;
+    margin: 0;
+  }
+  
+  canvas {
+    display: block;
+    margin: 0 auto;
+    border: 5px solid #004d40;
+    background-color: #ffffff;
+  }
+  
+  #emotion, #confidence {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background-color: rgba(0, 77, 64, 0.7);
+    padding: 10px;
+    border-radius: 5px;
+    font-size: 24px;
+    color: #ffffff;
+  }
+  

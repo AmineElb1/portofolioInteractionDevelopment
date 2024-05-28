@@ -1,87 +1,94 @@
-document.addEventListener("DOMContentLoaded", () => {
-    const questions = [
-        {
-            question: "Wat is de hoofdstad van Nederland?",
-            answer: "Amsterdam"
-        },
-        {
-            question: "Hoeveel is 2 + 2?",
-            answer: "vier"
-        },
-        {
-            question: "Welke kleur heeft een banaan?",
-            answer: "Geel"
-        }
-    ];
+var SpeechRecognition = SpeechRecognition || webkitSpeechRecognition;
+const spreekKnop = document.querySelector("#answer-button");
+const vraagElement = document.querySelector("#question-container");
+const quizContainer = document.querySelector("#quiz-container");
 
-    let currentQuestionIndex = 0;
+const vragen = [
+  {
+    vraag: "Wat is de hoofstad van België?",	
+    antwoorden: ["brussel"],
+  },
+  {
+    vraag: "Wat is de hoofdstad van Nederland?",
+    antwoorden: ["amsterdam"],
+  },
+  {
+    vraag: "Wat is de hoofdstad van Frankrijk?",
+    antwoorden: ["parijs"],
+  },
+];
 
-    const questionContainer = document.getElementById("question-container");
-    const resultContainer = document.getElementById("result-container");
-    const userAnswerContainer = document.getElementById("user-answer-container");
-    const answerButton = document.getElementById("answer-button");
+let huidigeVraagIndex = 0;
+let laatsteTranscriptie = "";
+const herkenning = new SpeechRecognition();
+herkenning.lang = "nl-BE";
+let timeoutId;
 
-    const synth = window.speechSynthesis;
-    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-    recognition.lang = "nl-NL";
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
+herkenning.onresult = function (event) {
+  clearTimeout(timeoutId);
+  laatsteTranscriptie = event.results[0][0].transcript.toLowerCase();
+  if (vragen[huidigeVraagIndex].antwoorden.includes(laatsteTranscriptie)) {
+    quizContainer.style.backgroundColor = "#8BC34A";
+    setTimeout(() => {
+      quizContainer.style.backgroundColor = "#fff";
+      huidigeVraagIndex++;
+      if (huidigeVraagIndex < vragen.length) {
+        stelVraag();
+      } else {
+        quizContainer.style.backgroundColor = "#8BC34A";
+        vraagElement.textContent = "Quiz is over";
+        spreekKnop.disabled = true;
+        spreekKnop.style.display = "none";
+      }
+    }, 700);
+  } else {
+    quizContainer.style.backgroundColor = "#FF5722";
+    setTimeout(() => {
+      quizContainer.style.backgroundColor = "#fff";
+      spreekKnop.disabled = false;
+    }, 700);
+  }
+};
 
-    function speak(text) {
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = "nl-NL";
-        synth.speak(utterance);
-    }
+herkenning.onspeechend = function () {
+  herkenning.stop();
+};
 
-    function askQuestion() {
-        if (currentQuestionIndex < questions.length) {
-            const question = questions[currentQuestionIndex].question;
-            questionContainer.textContent = question;
-            speak(question);
-        } else {
-            questionContainer.textContent = "Je hebt alle vragen beantwoord!";
-            answerButton.style.display = "none";
-        }
-    }
+herkenning.onend = function () {
+  if (
+    huidigeVraagIndex < vragen.length &&
+    !vragen[huidigeVraagIndex].antwoorden.includes(laatsteTranscriptie)
+  ) {
+    quizContainer.style.backgroundColor = "#FF5722";
+    setTimeout(() => {
+      quizContainer.style.backgroundColor = "#fff";
+      spreekKnop.disabled = false;
+    }, 700);
+  }
+};
 
-    function checkAnswer(userAnswer) {
-        const correctAnswer = questions[currentQuestionIndex].answer;
-        userAnswerContainer.textContent = `Je zei: ${userAnswer}`;
-        if (userAnswer.toLowerCase() === correctAnswer.toLowerCase()) {
-            resultContainer.textContent = "Juist!";
-            resultContainer.className = "result";
-        } else {
-            resultContainer.textContent = `Fout! Het juiste antwoord is ${correctAnswer}.`;
-            resultContainer.className = "error";
-        }
-        currentQuestionIndex++;
-        setTimeout(() => {
-            resultContainer.textContent = "";
-            userAnswerContainer.textContent = "";
-            askQuestion();
-        }, 3000);  // wacht 3 seconden voordat de volgende vraag wordt gesteld
-    }
-
-    recognition.onresult = (event) => {
-        const userAnswer = event.results[0][0].transcript;
-        checkAnswer(userAnswer);
-    };
-
-    recognition.onerror = (event) => {
-        resultContainer.textContent = "Er is een fout opgetreden tijdens de spraakherkenning.";
-        resultContainer.className = "error";
-    };
-
-    recognition.onend = () => {
-        // Herstart de spraakherkenning niet automatisch na een vraag
-    };
-
-    answerButton.addEventListener("click", () => {
-        if (currentQuestionIndex < questions.length) {
-            resultContainer.textContent = "";
-            recognition.start();
-        }
-    });
-
-    askQuestion();
+spreekKnop.addEventListener("click", function () {
+  spreekKnop.disabled = true;
+  stelVraag();
 });
+
+
+function stelVraag() {
+  vraagElement.textContent = vragen[huidigeVraagIndex].vraag;
+  leesVraagVoor(vragen[huidigeVraagIndex].vraag).then(() => {
+    herkenning.start();
+    timeoutId = setTimeout(() => {
+      herkenning.stop();
+    }, 5000);
+  });
+}
+
+function leesVraagVoor(vraag) {
+  return new Promise((resolve) => {
+    const synth = window.speechSynthesis;
+    const uiting = new SpeechSynthesisUtterance(vraag);
+    uiting.lang = "nl-BE";
+    uiting.onend = resolve;
+    synth.speak(uiting);
+  });
+}
